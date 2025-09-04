@@ -1,0 +1,106 @@
+pipeline {
+    agent any
+    
+    triggers {
+        // Trigger on pull request events
+        GenericTrigger(
+            genericVariables: [
+                [key: 'ref', value: '$.ref'],
+                [key: 'action', value: '$.action'],
+                [key: 'pull_request_number', value: '$.pull_request.number'],
+                [key: 'pull_request_title', value: '$.pull_request.title'],
+                [key: 'sender_login', value: '$.sender.login'],
+                [key: 'timestamp', value: '$.pull_request.updated_at']
+            ],
+            causeString: 'Triggered by pull request event',
+            token: 'your-webhook-token-here',
+            regexpFilterText: '$ref',
+            regexpFilterExpression: 'refs/pull/.*'
+        )
+    }
+    
+    stages {
+        stage('Check PR Event') {
+            steps {
+                script {
+                    // Check if this is a pull request event
+                    if (env.ref && env.ref.contains('refs/pull/')) {
+                        echo "Pull request detected: ${env.pull_request_number}"
+                        echo "Action: ${env.action}"
+                        echo "Title: ${env.pull_request_title}"
+                        echo "User: ${env.sender_login}"
+                        echo "Timestamp: ${env.timestamp}"
+                    } else {
+                        echo "Not a pull request event, skipping..."
+                        currentBuild.result = 'SUCCESS'
+                        return
+                    }
+                }
+            }
+        }
+        
+        stage('Generate PR Report') {
+            when {
+                expression { 
+                    return env.ref && env.ref.contains('refs/pull/') 
+                }
+            }
+            steps {
+                script {
+                    def currentTime = new Date().format("yyyy-MM-dd HH:mm:ss")
+                    def prNumber = env.pull_request_number ?: 'unknown'
+                    def prTitle = env.pull_request_title ?: 'No title'
+                    def user = env.sender_login ?: 'Unknown user'
+                    def action = env.action ?: 'unknown'
+                    
+                    def reportContent = """Pull Request Event Report
+=====================================
+Event Type: Pull Request ${action.toUpperCase()}
+PR Number: #${prNumber}
+Title: ${prTitle}
+User: ${user}
+Event Time: ${currentTime}
+Jenkins Build: #${env.BUILD_NUMBER}
+Build URL: ${env.BUILD_URL}
+Repository: ${env.GIT_URL ?: 'Unknown'}
+Branch: ${env.GIT_BRANCH ?: 'Unknown'}
+Commit: ${env.GIT_COMMIT ?: 'Unknown'}
+====================================="""
+                    
+                    // Write the report to a file
+                    writeFile file: "pr_report_${prNumber}_${currentTime.format('yyyyMMdd_HHmmss')}.txt", text: reportContent
+                    
+                    // Also create a latest report
+                    writeFile file: "latest_pr_report.txt", text: reportContent
+                    
+                    echo "Pull request report generated successfully"
+                }
+            }
+        }
+        
+        stage('Archive Reports') {
+            when {
+                expression { 
+                    return env.ref && env.ref.contains('refs/pull/') 
+                }
+            }
+            steps {
+                // Archive the generated files
+                archiveArtifacts artifacts: "*.txt", fingerprint: true
+                echo "Reports archived successfully"
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Build completed with result: ${currentBuild.result}"
+        }
+        success {
+            echo "Pull request report generation completed successfully"
+        }
+        failure {
+            echo "Failed to generate pull request report"
+        }
+    }
+}
