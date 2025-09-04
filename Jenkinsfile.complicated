@@ -13,7 +13,7 @@ pipeline {
                 [key: 'timestamp', value: '$.pull_request.updated_at']
             ],
             causeString: 'Triggered by pull request event',
-            token: 'your-webhook-token-here',
+            token: 'generic-webhook-trigger-token-for-jenkins-pipeline',
             regexpFilterText: '$ref',
             regexpFilterExpression: 'refs/pull/.*'
         )
