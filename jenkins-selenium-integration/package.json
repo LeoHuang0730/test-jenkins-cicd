@@ -1,0 +1,30 @@
+{
+  "name": "jenkins-selenium-integration",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build --turbopack",
+    "start": "next start",
+    "lint": "eslint",
+    "test:selenium": "node tests/selenium/run-tests.js",
+    "test:ci": "npm run build && npm run test:selenium",
+    "test:diagnose": "node tests/selenium/diagnose.js",
+    "test:simple": "node tests/selenium/simple-test.js"
+  },
+  "dependencies": {
+    "next": "15.5.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.2",
+    "selenium-webdriver": "^4.35.0",
+    "typescript": "^5"
+  }
+}
