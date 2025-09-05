@@ -48,15 +48,33 @@ pipeline {
         stage('Setup Node.js') {
             steps {
                 script {
-                    // Install Node.js if not available
+                    // Check Node.js availability and provide helpful error messages
                     sh '''
-                        if ! command -v node &> /dev/null; then
-                            echo "Installing Node.js ${NODE_VERSION}..."
-                            curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
-                            sudo apt-get install -y nodejs
+                        echo "🔍 Checking Node.js installation..."
+                        
+                        if command -v node &> /dev/null; then
+                            echo "✅ Node.js is already installed"
+                            node --version
+                            npm --version
+                        else
+                            echo "❌ Node.js is not installed on this Jenkins server"
+                            echo "📋 Please install Node.js ${NODE_VERSION} on your Jenkins server:"
+                            echo ""
+                            echo "Option 1 - Using NodeSource repository:"
+                            echo "  curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -"
+                            echo "  sudo apt-get install -y nodejs"
+                            echo ""
+                            echo "Option 2 - Using Jenkins NodeJS plugin:"
+                            echo "  1. Go to Manage Jenkins → Manage Plugins"
+                            echo "  2. Install 'NodeJS' plugin"
+                            echo "  3. Go to Manage Jenkins → Global Tool Configuration"
+                            echo "  4. Add NodeJS installation with version ${NODE_VERSION}"
+                            echo ""
+                            echo "Option 3 - Using Docker (if available):"
+                            echo "  docker run --rm -v \$(pwd):/app -w /app node:${NODE_VERSION} npm ci"
+                            echo ""
+                            exit 1
                         fi
-                        node --version
-                        npm --version
                     '''
                 }
             }
@@ -110,24 +128,22 @@ pipeline {
                 dir('jenkins-selenium-integration') {
                     script {
                         try {
-                            // Install Chrome and ChromeDriver for headless testing
+                            // Verify Chrome is installed (should be installed on server)
                             sh '''
-                                # Install Chrome
-                                wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-                                echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-                                sudo apt-get update
-                                sudo apt-get install -y google-chrome-stable
+                                echo "🔍 Checking Chrome installation..."
+                                if command -v google-chrome &> /dev/null; then
+                                    echo "✅ Chrome is installed"
+                                    google-chrome --version
+                                else
+                                    echo "❌ Chrome not found. Installing..."
+                                    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+                                    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+                                    sudo apt-get update
+                                    sudo apt-get install -y google-chrome-stable
+                                fi
                                 
-                                # Install ChromeDriver
-                                CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
-                                CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-                                wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
-                                sudo unzip /tmp/chromedriver.zip -d /usr/local/bin/
-                                sudo chmod +x /usr/local/bin/chromedriver
-                                
-                                # Verify installations
-                                google-chrome --version
-                                chromedriver --version
+                                echo "📋 ChromeDriver will be managed automatically by Selenium Manager"
+                                echo "✅ No manual ChromeDriver installation needed"
                             '''
                             
                             // Run Selenium tests
