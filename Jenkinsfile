@@ -87,8 +87,10 @@ pipeline {
                 dir('jenkins-selenium-integration') {
                     script {
                         // Start the Next.js app in background
-                        sh 'nohup npm start > app.log 2>&1 &'
-                        echo $! > app.pid
+                        sh '''
+                            nohup npm start > app.log 2>&1 &
+                            echo $! > app.pid
+                        '''
                         
                         // Wait for app to start
                         sh '''
