@@ -1,9 +1,7 @@
-"# test-jenkins-cicd" trying to update 1
-Jenkins + GCP VM + GitHub
+Jenkins + GCP VM + GitHub + Selenium
 
 1. GCP VM
 	-> Login to GCP account
-
 		-> Create VM
 			-> Machine Configuration
 				-> VM Name/Region/Zone/Series/Machine Type
