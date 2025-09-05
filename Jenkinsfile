@@ -1,14 +1,10 @@
 pipeline {
     agent any
     
-    // Trigger on GitHub push events
+    // Trigger on GitHub push events and poll for changes
     triggers {
         githubPush()
-    }
-    
-    // Poll GitHub for changes every minute (as backup)
-    triggers {
-        pollSCM('* * * * *')
+        // pollSCM('* * * * *')
     }
     
     environment {
